@@ -17,7 +17,7 @@ interface Link {
   totalClicks: number;
 }
 
-const FreeDemo = (): JSX.Element => {
+const FreeDemo = () => {
   const [openModal, setOpenModal] = useState(false);
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [links, setLinks] = useState<Link[]>([]);
@@ -25,12 +25,13 @@ const FreeDemo = (): JSX.Element => {
 
   const handleCreateShortLink = async (name: string, longUrl: string): Promise<void> => {
     const link: Link = {
+      id: nanoid(),
       name,
       longUrl: longUrl.includes('http') ? longUrl : `https://${longUrl}`,
       shortUrl: nanoid(6),
       totalClicks: 0,
     };
-
+  
     try {
       const userLinksCollectionRef = collection(db, `users/${userUid}/links`);
       const docRef = await addDoc(userLinksCollectionRef, link);
@@ -38,8 +39,7 @@ const FreeDemo = (): JSX.Element => {
     } catch (error) {
       console.error('Error adding document:', error);
     }
-
-
+  
     setOpenModal(false);
   };
 
@@ -53,28 +53,34 @@ const FreeDemo = (): JSX.Element => {
     }
   }, []);
 
+ 
   useEffect(() => {
     const fetchLinks = async (): Promise<void> => {
       try {
-        const userLinksCollectionRef = collection(db, `users/${userUid}/links`);
+        const userLinksCollectionRef = collection(db, 'links');
         const querySnapshot = await getDocs(userLinksCollectionRef);
-  
+
         const links: Link[] = querySnapshot.docs.map((doc) => {
           const data = doc.data();
-          return {
+          const link: Link = {
             id: doc.id,
-            ...data,
+            name: data.name,
+            longUrl: data.longUrl,
+            shortUrl: data.shortUrl,
+            totalClicks: data.totalClicks,
           };
+          return link;
         });
-  
+
         setLinks(links);
       } catch (error) {
         console.error('Error fetching links:', error);
       }
     };
-  
+
     fetchLinks();
-  }, [  links.length ]);
+  }, []);
+  
 
 
   const handleCopyLink = (shortUrl: string): void => {
